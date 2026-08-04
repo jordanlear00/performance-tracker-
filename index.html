@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Region 4 Goal Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1F4E5F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="R4 Tracker">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --navy:#1F4E5F; --navy-d:#173C49; --sage:#7A9B76; --gold:#C9962C; --plum:#8A5C90;
+    --paper:#FAF8F4; --card:#ffffff; --line:#EBE5D8; --line2:#F1EEE5;
+    --ink:#2B2B2B; --muted:#6B6355; --faint:#9B927F;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:Georgia, 'Times New Roman', serif;background:var(--paper);color:var(--ink);}
+  .sans{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 24px 64px;}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand-icon{width:34px;height:34px;border-radius:8px;background:var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .brand-icon svg{width:18px;height:18px;}
+  h1.title{font-size:28px;font-weight:700;margin:0;color:var(--navy);outline:none;cursor:text;min-width:120px;}
+  p.subtitle{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;margin:6px 0 0 44px;font-size:13.5px;color:var(--muted);outline:none;cursor:text;}
+  .editable:hover{background:var(--line2);border-radius:4px;}
+  .editable:focus{background:#FFFDF7;border-radius:4px;box-shadow:0 0 0 2px #C9962C33;}
+  .savebadge{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;font-size:11.5px;color:var(--faint);text-align:right;min-width:70px;}
+  .tabs{display:flex;gap:4px;border-bottom:1.5px solid var(--line);margin:24px 0;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;}
+  .tab{padding:10px 16px;font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:6px;color:var(--faint);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1.5px;user-select:none;}
+  .tab.active{color:var(--navy);border-bottom:2.5px solid var(--navy);}
+  .tab svg{width:14px;height:14px;}
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:28px;}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 14px;}
+  .stat .num{font-size:26px;font-weight:700;}
+  .stat .lbl{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;font-size:11.5px;color:var(--faint);margin-top:2px;}
+  .grid2{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;}
+  .card h3{font-size:13.5px;font-weight:700;color:var(--navy);margin:0 0 4px;}
+  .card .desc{font-size:11.5px;color:var(--faint);margin-bottom:14px;}
+  .goal-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .dot{width:8px;height:8px;border-radius:4px;flex-shrink:0;}
+  .goal-label{font-size:12.5px;width:220px;flex-shrink:0;color:#3A3529;}
+  .bar-bg{flex:1;background:#F1EEE5;border-radius:4px;height:8px;overflow:hidden;}
+  .bar-fill{height:100%;}
+  .goal-count{font-size:12px;color:var(--faint);width:16px;text-align:right;}
+  .phase-block{margin-bottom:14px;}
+  .phase-top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;}
+  .phase-top .name{color:#3A3529;font-weight:600;}
+  .phase-top .frac{color:var(--faint);}
+  .toolbar{display:flex;gap:8px;margin-bottom:14px;align-items:center;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;}
+  select.filter{font-size:12px;padding:7px 10px;border-radius:7px;border:1px solid var(--line);background:#fff;color:#3A3529;}
+  .btn-primary{background:var(--navy);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;cursor:pointer;font-family:inherit;}
+  .btn-primary svg{width:14px;height:14px;}
+  .table{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;}
+  .thead{display:grid;background:var(--navy);color:#fff;font-size:11px;font-weight:700;padding:10px 14px;letter-spacing:.3px;}
+  .thead.tasks, .row.tasks{grid-template-columns:26px 2.1fr 1fr 1fr 1.3fr 1fr 56px;}
+  .thead.phase, .row.phase{grid-template-columns:26px 2fr 1fr 1fr 1.3fr 56px;}
+  .row{display:grid;padding:12px 14px;border-top:1px solid var(--line2);font-size:12.5px;align-items:center;}
+  .row:hover{background:#F5F2EC;}
+  .row input[type=checkbox]{cursor:pointer;}
+  .task-name{font-weight:600;color:var(--ink);}
+  .task-target{font-size:11px;color:var(--faint);margin-top:2px;}
+  .pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap;display:inline-block;}
+  .phase-col{color:var(--faint);font-size:11.5px;}
+  .rowactions{display:flex;gap:6px;justify-content:flex-end;}
+  .rowactions svg{width:13px;height:13px;cursor:pointer;}
+  .empty{padding:30px;text-align:center;color:var(--faint);font-size:13px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;}
+  .phase-heading{font-size:13.5px;font-weight:700;color:var(--navy);margin-bottom:8px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;}
+  .brag-note{background:#EAF2F1;border:1px solid #D5E5E3;border-radius:10px;padding:12px 16px;font-size:12.5px;color:var(--navy);margin-bottom:18px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;}
+  .brag-card{background:#1F2A2E;border-radius:10px;padding:16px;color:#fff;margin-bottom:12px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;}
+  .brag-eyebrow{font-size:10.5px;color:#9BB3AE;margin-bottom:6px;letter-spacing:.3px;}
+  .brag-name{font-size:15px;font-weight:700;margin-bottom:6px;}
+  .brag-line{font-size:12.5px;color:#D8DED9;margin-bottom:4px;}
+  .brag-quote{font-size:12.5px;color:#B7D9C9;font-style:italic;margin-bottom:8px;}
+  .brag-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+  .brag-tag{color:#fff;font-size:10.5px;padding:3px 8px;border-radius:20px;}
+  .modal-overlay{position:fixed;inset:0;background:rgba(30,25,15,.35);display:none;align-items:center;justify-content:center;z-index:50;padding:16px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:#fff;border-radius:14px;padding:24px;width:480px;max-width:100%;max-height:85vh;overflow-y:auto;}
+  .modal-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .modal-title{font-family:Georgia,serif;font-size:18px;font-weight:700;color:var(--navy);}
+  .modal-top svg{width:18px;height:18px;cursor:pointer;color:var(--faint);}
+  .field{margin-bottom:12px;}
+  .field-row{display:flex;gap:10px;}
+  .field-row .field{flex:1;}
+  .field label{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px;display:block;}
+  .field input, .field select, .field textarea{width:100%;padding:9px 10px;border-radius:7px;border:1px solid var(--line);font-size:13px;box-sizing:border-box;color:var(--ink);background:#FCFBF8;font-family:inherit;}
+  .field textarea{resize:vertical;}
+  .modal-actions{display:flex;gap:10px;margin-top:18px;}
+  .btn-cancel{flex:1;padding:10px 0;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--muted);font-weight:600;cursor:pointer;font-family:inherit;}
+  .btn-save{flex:1;padding:10px 0;border-radius:8px;border:none;background:var(--navy);color:#fff;font-weight:600;cursor:pointer;font-family:inherit;}
+  .btn-delete{padding:10px 12px;border-radius:8px;border:1px solid #F3C9C2;background:#FBE8E6;color:#A23B2E;font-weight:600;cursor:pointer;display:flex;align-items:center;font-family:inherit;}
+  .btn-delete svg{width:15px;height:15px;}
+  .offlinebadge{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;font-size:10.5px;color:var(--faint);text-align:right;margin-top:2px;}
+  .install-btn{margin-top:8px;background:var(--navy);color:#fff;border:none;border-radius:7px;padding:7px 12px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;float:right;}
+  .install-btn:hover{background:var(--navy-d);}
+  @media (max-width:720px){
+    .stats{grid-template-columns:repeat(2,1fr);}
+    .grid2{grid-template-columns:1fr;}
+    .thead.tasks,.row.tasks{grid-template-columns:20px 1.6fr 60px;}
+    .thead.tasks div:nth-child(3),.thead.tasks div:nth-child(4),.thead.tasks div:nth-child(6),
+    .row.tasks > *:nth-child(3),.row.tasks > *:nth-child(4),.row.tasks > *:nth-child(6){display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div>
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.7" fill="#fff"/></svg>
+        </div>
+        <h1 id="title" class="title editable" contenteditable="true">Region 4 Goal Tracker</h1>
+      </div>
+      <p id="subtitle" class="subtitle editable" contenteditable="true">Personal tracker · not tied to emPerform · every task ladders to something bigger</p>
+    </div>
+    <div>
+      <div class="savebadge" id="saveBadge">saved</div>
+      <div class="offlinebadge">works offline · saved to this browser</div>
+      <button id="installBtn" class="install-btn" style="display:none">Install app</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+  <div id="body"></div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-top">
+      <div class="modal-title" id="modalTitle">Add Task</div>
+      <svg id="modalClose" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </div>
+
+    <div class="field"><label>Task name</label><input id="f_name" placeholder="e.g. Draft 988 postcard follow-up"></div>
+
+    <div class="field-row">
+      <div class="field"><label>Status</label>
+        <select id="f_status"><option>Not Started</option><option>In Progress</option><option>Blocked</option><option>Done</option></select>
+      </div>
+      <div class="field"><label>Priority</label>
+        <select id="f_priority"><option>High</option><option>Medium</option><option>Low</option></select>
+      </div>
+    </div>
+
+    <div class="field"><label>Phase</label>
+      <select id="f_phase">
+        <option>Short-term (30–90 days)</option>
+        <option>Mid-term (3–6 months)</option>
+        <option>Long-term (6–12+ months)</option>
+      </select>
+    </div>
+
+    <div class="field"><label>Which goal does this ladder to?</label>
+      <select id="f_orgGoal"></select>
+    </div>
+
+    <div class="field"><label>Measurable target</label><input id="f_target" placeholder="What does done look like?"></div>
+    <div class="field"><label>Collaborators / who to loop in</label><input id="f_collaborators" placeholder="e.g. Hannah, Carolyn"></div>
+    <div class="field"><label>Notes / next step</label><textarea id="f_notes" rows="2"></textarea></div>
+    <div class="field"><label>Proof of impact (optional — for Brag Doc)</label><input id="f_proof" placeholder="e.g. Survey completed by 40 staff"></div>
+    <div class="field"><label>Quote / feedback (optional)</label><input id="f_quote" placeholder='e.g. "Great first draft" — supervisor'></div>
+
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = "region4-tracker-offline";
+
+const ORG_GOALS = [
+  { category: "Mission", label: "Promotes health, wellness & recovery" },
+  { category: "Vision", label: "Inclusive, healthy community" },
+  { category: "Value", label: "Equity" },
+  { category: "Value", label: "Innovation" },
+  { category: "Value", label: "Quality" },
+  { category: "Value", label: "Inclusion" },
+  { category: "Value", label: "Accessibility" },
+  { category: "Value", label: "Transparency" },
+  { category: "Value", label: "Compassion" },
+  { category: "Value", label: "Integrity" },
+  { category: "Supervisor Goal", label: "Region 4 Brand" },
+  { category: "Supervisor Goal", label: "988 Community Awareness" },
+  { category: "Supervisor Goal", label: "Crisis Continuum Knowledge (Internal)" },
+  { category: "Supervisor Goal", label: "Data-Driven Success Measurement" },
+];
+
+const CATEGORY_STYLE = {
+  Mission: { bg: "#EAF2F1", text: "#1F4E5F", dot: "#1F4E5F" },
+  Vision: { bg: "#EEF4EA", text: "#4C6B3F", dot: "#7A9B76" },
+  Value: { bg: "#FBF3E3", text: "#8A6416", dot: "#C9962C" },
+  "Supervisor Goal": { bg: "#F3ECF3", text: "#6B4770", dot: "#8A5C90" },
+};
+const STATUS_STYLE = {
+  "Not Started": { bg: "#F1F2F4", text: "#5B6472" },
+  "In Progress": { bg: "#E4EEFB", text: "#2A5C99" },
+  "Blocked": { bg: "#FBE8E6", text: "#A23B2E" },
+  "Done": { bg: "#E5F3E8", text: "#2C7A3D" },
+};
+const PRIORITY_STYLE = {
+  High: { bg: "#FBE8E6", text: "#A23B2E" },
+  Medium: { bg: "#FBF3E3", text: "#8A6416" },
+  Low: { bg: "#F1F2F4", text: "#5B6472" },
+};
+const PHASES = ["Short-term (30–90 days)", "Mid-term (3–6 months)", "Long-term (6–12+ months)"];
+
+const seedTasks = [
+  { id: 1, name: "Meet with Hannah (crisis services materials, baseline data)", status: "In Progress", priority: "High", phase: PHASES[0], orgGoal: "Data-Driven Success Measurement", target: "Meeting held; open questions answered", collaborators: "Hannah", notes: "Already scheduled", proof: "", quote: "" },
+  { id: 2, name: "Meet with Justin (RBHA digital/comms overlap)", status: "In Progress", priority: "High", phase: PHASES[0], orgGoal: "Region 4 Brand", target: "Meeting held; lane clarified", collaborators: "Justin", notes: "Already scheduled", proof: "", quote: "" },
+  { id: 3, name: "Connect with Carolyn re: brand + merch design history", status: "Not Started", priority: "Medium", phase: PHASES[0], orgGoal: "Region 4 Brand", target: "Intro meeting scheduled", collaborators: "Carolyn", notes: "", proof: "", quote: "" },
+  { id: 4, name: "Begin shadowing outreach across program silos", status: "Not Started", priority: "Medium", phase: PHASES[0], orgGoal: "Crisis Continuum Knowledge (Internal)", target: "3+ shadow sessions scheduled", collaborators: "Program leads", notes: "CRC, CSU, CReST, REACH, Jail Team, SUD, Recovery Services", proof: "", quote: "" },
+  { id: 5, name: "Get $150K allocation constraints (timeline, approval process)", status: "Not Started", priority: "High", phase: PHASES[0], orgGoal: "988 Community Awareness", target: "Written breakdown obtained", collaborators: "Supervisor, finance", notes: "988 external + crisis continuum internal", proof: "", quote: "" },
+  { id: 6, name: "Locate and review Hannah's baseline data", status: "Not Started", priority: "High", phase: PHASES[0], orgGoal: "Data-Driven Success Measurement", target: "Baseline data reviewed", collaborators: "Hannah", notes: "Comparison point for success metrics", proof: "", quote: "" },
+  { id: 7, name: "Complete emPerform walkthrough", status: "Not Started", priority: "Medium", phase: PHASES[0], orgGoal: "Data-Driven Success Measurement", target: "First login + review done", collaborators: "HR / supervisor", notes: "", proof: "", quote: "" },
+  { id: 8, name: "Draft awareness/knowledge survey (internal + external)", status: "Not Started", priority: "Medium", phase: PHASES[0], orgGoal: "Data-Driven Success Measurement", target: "Draft ready for review", collaborators: "Supervisor, Hannah", notes: "", proof: "", quote: "" },
+  { id: 9, name: "Identify 2 personal values that matter to you in this role", status: "Not Started", priority: "Low", phase: PHASES[0], orgGoal: "Integrity", target: "2 values named w/ rationale", collaborators: "Supervisor", notes: "For supervisor conversation", proof: "", quote: "" },
+  { id: 10, name: "Propose check-in cadence", status: "Not Started", priority: "Medium", phase: PHASES[0], orgGoal: "Transparency", target: "Proposal shared with supervisor", collaborators: "Supervisor", notes: "e.g., weekly x1mo, then biweekly", proof: "", quote: "" },
+  { id: 11, name: "Resolve Region 4 vs. RBHA brand identity question", status: "Not Started", priority: "High", phase: PHASES[1], orgGoal: "Region 4 Brand", target: "Direction agreed w/ supervisor + Carolyn", collaborators: "Supervisor, Carolyn", notes: "Depends on Carolyn conversation", proof: "", quote: "" },
+  { id: 12, name: "Finalize $150K split (988-external vs. crisis-continuum-internal)", status: "Not Started", priority: "High", phase: PHASES[1], orgGoal: "988 Community Awareness", target: "Allocation approved", collaborators: "Supervisor", notes: "First draft split ready by day 30", proof: "", quote: "" },
+  { id: 13, name: "Launch first 988 external awareness push", status: "Not Started", priority: "High", phase: PHASES[1], orgGoal: "988 Community Awareness", target: "1 campaign/material live", collaborators: "Prevention Teams, Carolyn", notes: "Likely via BeWellVA", proof: "", quote: "" },
+  { id: 14, name: "Launch first internal crisis continuum education material", status: "Not Started", priority: "Medium", phase: PHASES[1], orgGoal: "Crisis Continuum Knowledge (Internal)", target: "1 material shipped to staff", collaborators: "Program leads", notes: "Could build on shadowing insights", proof: "", quote: "" },
+  { id: 15, name: "Compile first comparative dataset vs. Hannah's baseline", status: "Not Started", priority: "Medium", phase: PHASES[1], orgGoal: "Data-Driven Success Measurement", target: "First comparison drafted", collaborators: "Hannah, supervisor", notes: "", proof: "", quote: "" },
+  { id: 16, name: "Full crisis continuum communication strategy in place", status: "Not Started", priority: "High", phase: PHASES[2], orgGoal: "Crisis Continuum Knowledge (Internal)", target: "Strategy doc covering full regional service map", collaborators: "Supervisor, program leads", notes: "Not just 988", proof: "", quote: "" },
+  { id: 17, name: "Demonstrated movement in comparative data vs. baseline", status: "Not Started", priority: "Medium", phase: PHASES[2], orgGoal: "Data-Driven Success Measurement", target: "Second-round comparison shows trend", collaborators: "Supervisor", notes: "Tied to emPerform", proof: "", quote: "" },
+  { id: 18, name: "Brand identity consistently applied across materials", status: "Not Started", priority: "Medium", phase: PHASES[2], orgGoal: "Region 4 Brand", target: "Audit shows consistent use", collaborators: "Carolyn, Justin", notes: "", proof: "", quote: "" },
+];
+
+let state = { tasks: seedTasks, title: "Region 4 Goal Tracker", subtitle: "Personal tracker · not tied to emPerform · every task ladders to something bigger", tab: "overview", filters: { status: "All", phase: "All", goal: "All" }, editingId: null };
+
+function goalFor(label){ return ORG_GOALS.find(g => g.label === label) || ORG_GOALS[0]; }
+function esc(s){ const d=document.createElement('div'); d.textContent = s==null?'':s; return d.innerHTML; }
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(Array.isArray(parsed.tasks) && parsed.tasks.length) state.tasks = parsed.tasks;
+      if(parsed.title) state.title = parsed.title;
+      if(parsed.subtitle) state.subtitle = parsed.subtitle;
+    }
+  }catch(e){}
+}
+function save(){
+  document.getElementById('saveBadge').textContent = 'saving…';
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: state.tasks, title: state.title, subtitle: state.subtitle }));
+    setTimeout(()=>{ document.getElementById('saveBadge').textContent = 'saved'; }, 200);
+  }catch(e){
+    document.getElementById('saveBadge').textContent = 'save failed';
+  }
+}
+
+function icon(name){
+  const icons = {
+    grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+    list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
+    sparkle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></svg>',
+    award: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5L7 21l5-2.5L17 21l-1.5-8.5"/></svg>',
+    pencil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.83 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5z"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
+  };
+  return icons[name] || '';
+}
+
+function renderTabs(){
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: 'grid' },
+    { id: 'tasks', label: 'All Tasks', icon: 'list' },
+    { id: 'phase', label: 'By Phase', icon: 'sparkle' },
+    { id: 'brag', label: 'Brag Doc', icon: 'award' },
+  ];
+  document.getElementById('tabs').innerHTML = tabs.map(t => `
+    <div class="tab ${state.tab===t.id?'active':''}" data-tab="${t.id}">${icon(t.icon)}${esc(t.label)}</div>
+  `).join('');
+  document.querySelectorAll('.tab').forEach(el => el.onclick = () => { state.tab = el.dataset.tab; renderAll(); });
+}
+
+function computeStats(){
+  const t = state.tasks;
+  return {
+    total: t.length,
+    done: t.filter(x=>x.status==='Done').length,
+    inProgress: t.filter(x=>x.status==='In Progress').length,
+    blocked: t.filter(x=>x.status==='Blocked').length,
+    notStarted: t.filter(x=>x.status==='Not Started').length,
+  };
+}
+function computeGoalBreakdown(){
+  const counts = {};
+  state.tasks.forEach(t => counts[t.orgGoal] = (counts[t.orgGoal]||0)+1);
+  return Object.entries(counts).map(([label,count]) => ({label,count,category:goalFor(label).category})).sort((a,b)=>b.count-a.count);
+}
+function byPhase(){
+  return PHASES.map(phase => ({ phase, tasks: state.tasks.filter(t=>t.phase===phase) }));
+}
+
+function renderOverview(){
+  const s = computeStats();
+  const goals = computeGoalBreakdown();
+  const maxCount = Math.max(1, ...goals.map(g=>g.count));
+  const phases = byPhase();
+
+  const statCards = [
+    {label:'Total tasks', value:s.total, color:'#1F4E5F'},
+    {label:'Done', value:s.done, color:'#2C7A3D'},
+    {label:'In progress', value:s.inProgress, color:'#2A5C99'},
+    {label:'Not started', value:s.notStarted, color:'#5B6472'},
+    {label:'Blocked', value:s.blocked, color:'#A23B2E'},
+  ].map(c=>`<div class="stat"><div class="num" style="color:${c.color}">${c.value}</div><div class="lbl">${esc(c.label)}</div></div>`).join('');
+
+  const goalRows = goals.map(g=>{
+    const st = CATEGORY_STYLE[g.category];
+    return `<div class="goal-row">
+      <div class="dot" style="background:${st.dot}"></div>
+      <div class="goal-label">${esc(g.label)}</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${(g.count/maxCount)*100}%;background:${st.dot}"></div></div>
+      <div class="goal-count">${g.count}</div>
+    </div>`;
+  }).join('');
+
+  const phaseRows = phases.map(p=>{
+    const done = p.tasks.filter(t=>t.status==='Done').length;
+    const pct = p.tasks.length ? Math.round(done/p.tasks.length*100) : 0;
+    return `<div class="phase-block">
+      <div class="phase-top"><span class="name">${esc(p.phase)}</span><span class="frac">${done} of ${p.tasks.length} done</span></div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:#7A9B76"></div></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('body').innerHTML = `
+    <div class="stats">${statCards}</div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Org Goal Alignment</h3>
+        <div class="desc">What each task ladders to — mission, vision, values, or your supervisor's stated goals</div>
+        ${goalRows}
+      </div>
+      <div class="card">
+        <h3>By Phase</h3>
+        ${phaseRows}
+      </div>
+    </div>
+  `;
+}
+
+function renderTasksTable(){
+  const f = state.filters;
+  const filtered = state.tasks.filter(t =>
+    (f.status==='All'||t.status===f.status) &&
+    (f.phase==='All'||t.phase===f.phase) &&
+    (f.goal==='All'||t.orgGoal===f.goal)
+  );
+
+  const goalOptions = ['All', ...ORG_GOALS.map(g=>g.label)].map(o=>`<option value="${esc(o)}" ${f.goal===o?'selected':''}>${esc(o)}</option>`).join('');
+  const statusOptions = ['All','Not Started','In Progress','Blocked','Done'].map(o=>`<option value="${esc(o)}" ${f.status===o?'selected':''}>${esc(o)}</option>`).join('');
+  const phaseOptions = ['All',...PHASES].map(o=>`<option value="${esc(o)}" ${f.phase===o?'selected':''}>${esc(o)}</option>`).join('');
+
+  const rows = filtered.map(t => taskRow(t,'tasks')).join('') || `<div class="empty">No tasks match these filters.</div>`;
+
+  document.getElementById('body').innerHTML = `
+    <div class="toolbar">
+      <select class="filter" id="filterStatus">${statusOptions}</select>
+      <select class="filter" id="filterPhase">${phaseOptions}</select>
+      <select class="filter" id="filterGoal">${goalOptions}</select>
+      <div style="flex:1"></div>
+      <button class="btn-primary" id="addTaskBtn">${icon('plus')}Add Task</button>
+    </div>
+    <div class="table">
+      <div class="thead tasks"><div></div><div>TASK / TARGET</div><div>STATUS</div><div>PRIORITY</div><div>LADDERS TO</div><div>PHASE</div><div></div></div>
+      ${rows}
+    </div>
+  `;
+
+  document.getElementById('filterStatus').onchange = e => { state.filters.status = e.target.value; renderAll(); };
+  document.getElementById('filterPhase').onchange = e => { state.filters.phase = e.target.value; renderAll(); };
+  document.getElementById('filterGoal').onchange = e => { state.filters.goal = e.target.value; renderAll(); };
+  document.getElementById('addTaskBtn').onclick = () => openModal(null);
+  wireRowEvents();
+}
+
+function taskRow(t, kind){
+  const gs = CATEGORY_STYLE[goalFor(t.orgGoal).category];
+  const ss = STATUS_STYLE[t.status];
+  const ps = PRIORITY_STYLE[t.priority];
+  if(kind==='tasks'){
+    return `<div class="row tasks" data-id="${t.id}">
+      <input type="checkbox" class="chk" data-id="${t.id}" ${t.status==='Done'?'checked':''}>
+      <div><div class="task-name">${esc(t.name)}</div><div class="task-target">${esc(t.target)}</div></div>
+      <div><span class="pill" style="background:${ss.bg};color:${ss.text}">${esc(t.status)}</span></div>
+      <div><span class="pill" style="background:${ps.bg};color:${ps.text}">${esc(t.priority)}</span></div>
+      <div><span class="pill" style="background:${gs.bg};color:${gs.text}">${esc(t.orgGoal)}</span></div>
+      <div class="phase-col">${esc(t.phase.split(' (')[0])}</div>
+      <div class="rowactions"><span class="editBtn" data-id="${t.id}">${icon('pencil')}</span><span class="delBtn" data-id="${t.id}">${icon('trash')}</span></div>
+    </div>`;
+  } else {
+    return `<div class="row phase" data-id="${t.id}">
+      <input type="checkbox" class="chk" data-id="${t.id}" ${t.status==='Done'?'checked':''}>
+      <div class="task-name">${esc(t.name)}</div>
+      <div><span class="pill" style="background:${ss.bg};color:${ss.text}">${esc(t.status)}</span></div>
+      <div><span class="pill" style="background:${ps.bg};color:${ps.text}">${esc(t.priority)}</span></div>
+      <div><span class="pill" style="background:${gs.bg};color:${gs.text}">${esc(t.orgGoal)}</span></div>
+      <div class="rowactions"><span class="editBtn" data-id="${t.id}">${icon('pencil')}</span><span class="delBtn" data-id="${t.id}">${icon('trash')}</span></div>
+    </div>`;
+  }
+}
+
+function wireRowEvents(){
+  document.querySelectorAll('.chk').forEach(el => el.onchange = () => toggleDone(+el.dataset.id));
+  document.querySelectorAll('.editBtn').forEach(el => el.onclick = () => openModal(+el.dataset.id));
+  document.querySelectorAll('.delBtn').forEach(el => el.onclick = () => { if(confirm('Delete this task?')) removeTask(+el.dataset.id); });
+}
+
+function renderByPhase(){
+  const phases = byPhase();
+  document.getElementById('body').innerHTML = phases.map(p=>{
+    const done = p.tasks.filter(t=>t.status==='Done').length;
+    const rows = p.tasks.map(t=>taskRow(t,'phase')).join('') || `<div class="empty" style="padding:20px">Nothing here yet.</div>`;
+    return `<div style="margin-bottom:20px">
+      <div class="phase-heading">${esc(p.phase)} — ${done} of ${p.tasks.length} done</div>
+      <div class="table">
+        <div class="thead phase"><div></div><div>TASK</div><div>STATUS</div><div>PRIORITY</div><div>LADDERS TO</div><div></div></div>
+        ${rows}
+      </div>
+    </div>`;
+  }).join('');
+  wireRowEvents();
+}
+
+function renderBrag(){
+  const entries = state.tasks.filter(t=>t.status==='Done');
+  const note = `<div class="brag-note">Your Brag Doc — completed tasks, formatted to copy straight into a self-evaluation or bring to a review conversation.</div>`;
+  if(!entries.length){
+    document.getElementById('body').innerHTML = note + `<div class="empty">Nothing marked Done yet — check items off in All Tasks and they'll show up here.</div>`;
+    return;
+  }
+  const cards = entries.map(t=>{
+    const gs = CATEGORY_STYLE[goalFor(t.orgGoal).category];
+    return `<div class="brag-card">
+      <div class="brag-eyebrow">${esc(t.phase.split(' (')[0].toUpperCase())} · ${esc(t.priority.toUpperCase())} PRIORITY</div>
+      <div class="brag-name">${esc(t.name)}</div>
+      ${t.target ? `<div class="brag-line">✓ ${esc(t.target)}</div>`:''}
+      ${t.proof ? `<div class="brag-line">✓ ${esc(t.proof)}</div>`:''}
+      ${t.quote ? `<div class="brag-quote">"${esc(t.quote)}"</div>`:''}
+      <div class="brag-tags">
+        <span class="brag-tag" style="background:${gs.dot}">${esc(t.orgGoal)}</span>
+        ${t.collaborators ? `<span class="brag-tag" style="background:#33454A">${esc(t.collaborators)}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('body').innerHTML = note + cards;
+}
+
+function toggleDone(id){
+  const t = state.tasks.find(x=>x.id===id);
+  if(!t) return;
+  t.status = t.status==='Done' ? 'Not Started' : 'Done';
+  save(); renderAll();
+}
+function removeTask(id){
+  state.tasks = state.tasks.filter(t=>t.id!==id);
+  save(); renderAll();
+}
+
+function orgGoalOptionsHTML(selected){
+  const cats = ['Mission','Vision','Value','Supervisor Goal'];
+  return cats.map(cat=>{
+    const opts = ORG_GOALS.filter(g=>g.category===cat).map(g=>`<option value="${esc(g.label)}" ${g.label===selected?'selected':''}>${esc(g.label)}</option>`).join('');
+    return `<optgroup label="${esc(cat)}">${opts}</optgroup>`;
+  }).join('');
+}
+
+function openModal(id){
+  state.editingId = id;
+  const t = id ? state.tasks.find(x=>x.id===id) : { name:'', status:'Not Started', priority:'Medium', phase:PHASES[0], orgGoal:ORG_GOALS[0].label, target:'', collaborators:'', notes:'', proof:'', quote:'' };
+
+  document.getElementById('modalTitle').textContent = id ? 'Edit Task' : 'Add Task';
+  document.getElementById('f_name').value = t.name;
+  document.getElementById('f_status').value = t.status;
+  document.getElementById('f_priority').value = t.priority;
+  document.getElementById('f_phase').value = t.phase;
+  document.getElementById('f_orgGoal').innerHTML = orgGoalOptionsHTML(t.orgGoal);
+  document.getElementById('f_target').value = t.target;
+  document.getElementById('f_collaborators').value = t.collaborators;
+  document.getElementById('f_notes').value = t.notes;
+  document.getElementById('f_proof').value = t.proof;
+  document.getElementById('f_quote').value = t.quote;
+
+  const actions = document.getElementById('modalActions');
+  actions.innerHTML = `
+    ${id ? `<button class="btn-delete" id="modalDelete">${icon('trash')}</button>` : ''}
+    <button class="btn-cancel" id="modalCancel">Cancel</button>
+    <button class="btn-save" id="modalSave">${id ? 'Save Changes':'Add Task'}</button>
+  `;
+  if(id) document.getElementById('modalDelete').onclick = () => { if(confirm('Delete this task?')){ removeTask(id); closeModal(); } };
+  document.getElementById('modalCancel').onclick = closeModal;
+  document.getElementById('modalSave').onclick = saveModalTask;
+
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(){
+  state.editingId = null;
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+function saveModalTask(){
+  const name = document.getElementById('f_name').value.trim();
+  if(!name) return;
+  const data = {
+    name,
+    status: document.getElementById('f_status').value,
+    priority: document.getElementById('f_priority').value,
+    phase: document.getElementById('f_phase').value,
+    orgGoal: document.getElementById('f_orgGoal').value,
+    target: document.getElementById('f_target').value,
+    collaborators: document.getElementById('f_collaborators').value,
+    notes: document.getElementById('f_notes').value,
+    proof: document.getElementById('f_proof').value,
+    quote: document.getElementById('f_quote').value,
+  };
+  if(state.editingId){
+    const idx = state.tasks.findIndex(t=>t.id===state.editingId);
+    if(idx>-1) state.tasks[idx] = { ...data, id: state.editingId };
+  } else {
+    state.tasks.push({ ...data, id: Date.now() });
+  }
+  save();
+  closeModal();
+  renderAll();
+}
+
+document.getElementById('modalClose').onclick = closeModal;
+document.getElementById('modalOverlay').onclick = (e) => { if(e.target.id==='modalOverlay') closeModal(); };
+
+document.getElementById('title').addEventListener('blur', e => {
+  const val = e.target.textContent.trim();
+  state.title = val || state.title;
+  e.target.textContent = state.title;
+  save();
+});
+document.getElementById('subtitle').addEventListener('blur', e => {
+  const val = e.target.textContent.trim();
+  state.subtitle = val || state.subtitle;
+  e.target.textContent = state.subtitle;
+  save();
+});
+
+function renderAll(){
+  renderTabs();
+  document.getElementById('title').textContent = state.title;
+  document.getElementById('subtitle').textContent = state.subtitle;
+  if(state.tab==='overview') renderOverview();
+  else if(state.tab==='tasks') renderTasksTable();
+  else if(state.tab==='phase') renderByPhase();
+  else if(state.tab==='brag') renderBrag();
+}
+
+load();
+renderAll();
+
+// --- PWA: service worker + install prompt ---
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+  });
+}
+
+let deferredInstallPrompt = null;
+const installBtn = document.getElementById("installBtn");
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  installBtn.style.display = "inline-block";
+});
+
+installBtn.addEventListener("click", async () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  installBtn.style.display = "none";
+});
+
+window.addEventListener("appinstalled", () => {
+  installBtn.style.display = "none";
+});
+
+</script>
+</body>
+</html>
